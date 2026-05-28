@@ -6,6 +6,17 @@
     "realism"
   ],
   "ignore": [
+    ".github/*",
+    "scripts/*",
+    "tests/*",
+    "workshop/*",
+    "dist/*",
+    "README.md",
+    "LICENSE.md",
+    "PRIVACY.md",
+    "WHATSNEW.md",
+    "*.gma",
+    "*.DS_Store",
     "*.psd",
     "*.pdn",
     "*.git*",

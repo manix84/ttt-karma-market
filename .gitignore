@@ -39,3 +39,7 @@ luac.out
 *.x86_64
 *.hex
 
+# Local/generated addon output
+.DS_Store
+dist/
+*.gma

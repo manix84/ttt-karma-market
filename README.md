@@ -61,10 +61,41 @@ The addon is designed for `gmad` and `gmpublish` and avoids unsupported file
 types, external dependencies, generated junk, and modifications to TTT core
 files.
 
+## 🧪 Checks
+
+Run the local validation suite from the repository root:
+
+```sh
+bash scripts/check_all.sh
+```
+
+This checks:
+
+- addon metadata and required file layout
+- Workshop package surface and ignored repository files
+- 64x64 in-game icon and 512x512 Workshop icon dimensions
+- Lua syntax with `luac`
+- simple GLua policy checks for forbidden web/DHTML patterns
+- dry-run build behavior, using `gmad` when available
+
 ## 🚀 GitHub Actions
 
 This addon is intentionally kept in a clean addon root so a future workflow can
 package the repository root and deploy the resulting `.gma` to Steam Workshop.
+
+Workflows:
+
+- `CI`: runs on pull requests and pushes to `main`.
+- `Build and Deploy to Steam Workshop`: runs on pushes to `main` and manual dispatch.
+
+Required deploy secrets:
+
+- `STEAM_USERNAME`: Steam account username for publishing.
+- `STEAM_VDF`: base64-encoded Steam `config.vdf`, recommended for Steam Guard auth.
+- `STEAM_WORKSHOP_ID`: existing Workshop item ID to update.
+
+The deploy workflow uses `gmod-workshop/workshop-upload@v1`, which packages the
+addon directory and uploads it to the Garry's Mod Workshop with `workshop/icon.jpg`.
 
 ## ✅ Compatibility
 
