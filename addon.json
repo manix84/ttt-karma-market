@@ -1,0 +1,14 @@
+{
+  "title": "TTT Karma Market",
+  "type": "tool",
+  "tags": [
+    "fun",
+    "realism"
+  ],
+  "ignore": [
+    "*.psd",
+    "*.pdn",
+    "*.git*",
+    "node_modules/*"
+  ]
+}
