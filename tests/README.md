@@ -20,3 +20,6 @@ Coverage today:
 
 Future in-game tests should live here when a repeatable Garry's Mod test harness
 is available.
+
+For manual local game testing, see the Local Testing section in the root
+`README.md`.

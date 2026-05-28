@@ -22,6 +22,46 @@ garrysmod/addons/ttt-karma-market
 
 Restart the server or change map after installation.
 
+## 🧪 Local Testing
+
+For local development, install the repository into your Garry's Mod addons
+directory before starting the game.
+
+On macOS with the default Steam install path:
+
+```sh
+bash scripts/install_local.sh
+```
+
+That creates a symlink at:
+
+```text
+~/Library/Application Support/Steam/steamapps/common/GarrysMod/garrysmod/addons/ttt-karma-market
+```
+
+To pass the addons directory explicitly:
+
+```sh
+bash scripts/install_local.sh symlink "/path/to/GarrysMod/garrysmod/addons"
+```
+
+If you prefer a physical copy instead of a symlink:
+
+```sh
+bash scripts/install_local.sh copy "/path/to/GarrysMod/garrysmod/addons"
+```
+
+The helper runs `bash scripts/check_all.sh` before installing. After install,
+restart Garry's Mod or change map.
+
+Recommended manual smoke test:
+
+- Start a local TTT game or server with this addon installed.
+- Confirm the addon appears in `Utilities > TTT > Karma Market`.
+- Start and finish a TTT round.
+- Confirm the `Karma Market` end-round tab appears, or that the fallback popup opens.
+- Toggle `ttt_karma_market_debug` in the admin panel and check the console for lifecycle messages.
+
 ## ⚙️ Configuration
 
 Edit `lua/ttt_karma_market/sh_config.lua`.
