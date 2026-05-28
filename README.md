@@ -101,6 +101,47 @@ The addon is designed for `gmad` and `gmpublish` and avoids unsupported file
 types, external dependencies, generated junk, and modifications to TTT core
 files.
 
+## 🆕 First Workshop Publish
+
+You do not get a Workshop item ID until the first successful publish. The first
+publish creates the Workshop page; after that, the numeric ID in the page URL is
+used for updates and CI deployment.
+
+Run this locally once:
+
+```sh
+bash scripts/create_workshop_item.sh
+```
+
+The script:
+
+- runs the local validation suite
+- builds `dist/ttt-karma-market.gma`
+- uploads a new Workshop item with `gmpublish create`
+- uses `workshop/icon.jpg` as the Workshop icon
+
+If the script cannot find Garry's Mod tools automatically, set paths explicitly:
+
+```sh
+GMOD_BIN="/path/to/GarrysMod/bin" bash scripts/create_workshop_item.sh
+```
+
+or:
+
+```sh
+GMAD_BIN="/path/to/gmad" GMPUBLISH_BIN="/path/to/gmpublish" bash scripts/create_workshop_item.sh
+```
+
+After the upload succeeds, open the new Workshop item and copy the number from
+the URL:
+
+```text
+https://steamcommunity.com/sharedfiles/filedetails/?id=1234567890
+```
+
+Use that number as the `STEAM_WORKSHOP_ID` GitHub Actions secret. Future pushes
+to `main` can then update the existing item instead of creating a new one.
+
 ## 🧪 Checks
 
 Run the local validation suite from the repository root:
@@ -132,7 +173,7 @@ Required deploy secrets:
 
 - `STEAM_USERNAME`: Steam account username for publishing.
 - `STEAM_VDF`: base64-encoded Steam `config.vdf`, recommended for Steam Guard auth.
-- `STEAM_WORKSHOP_ID`: existing Workshop item ID to update.
+- `STEAM_WORKSHOP_ID`: existing Workshop item ID to update, created by the first publish.
 
 The deploy workflow uses `gmod-workshop/workshop-upload@v1`, which packages the
 addon directory and uploads it to the Garry's Mod Workshop with `workshop/icon.jpg`.

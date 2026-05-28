@@ -26,6 +26,7 @@ Initial production-ready addon structure for TTT Karma Market.
 - GitHub Actions Steam Workshop deploy workflow for pushes to `main` and manual dispatch.
 - 512x512 Workshop icon at `workshop/icon.jpg`.
 - Local install helper for symlink or copy-based Garry's Mod testing.
+- First-publish helper and documentation for creating the initial Steam Workshop item ID.
 
 🔄 Changed:
 
