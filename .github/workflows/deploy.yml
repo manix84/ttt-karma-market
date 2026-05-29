@@ -22,6 +22,8 @@ jobs:
   preflight:
     name: Validate deploy configuration
     runs-on: ubuntu-latest
+    outputs:
+      deploy_enabled: ${{ steps.deploy_config.outputs.deploy_enabled }}
 
     env:
       WORKSHOP_ITEM_ID: ${{ vars.STEAM_WORKSHOP_ITEM_ID || secrets.STEAM_WORKSHOP_ID }}
@@ -31,39 +33,55 @@ jobs:
 
     steps:
       - name: Check required deploy variables
+        id: deploy_config
         run: |
           set -euo pipefail
 
           missing=0
 
           if [ -z "${STEAM_USERNAME}" ]; then
-            echo "::error::Missing STEAM_USERNAME. Set repository variable STEAM_USERNAME, or set secret STEAM_USERNAME."
+            echo "::warning::Missing STEAM_USERNAME. Set repository variable STEAM_USERNAME, or set secret STEAM_USERNAME."
             missing=1
           fi
 
           if [ -z "${WORKSHOP_ITEM_ID}" ]; then
-            echo "::error::Missing Steam Workshop item ID. Set repository variable STEAM_WORKSHOP_ITEM_ID or secret STEAM_WORKSHOP_ID."
+            echo "::warning::Missing Steam Workshop item ID. Set repository variable STEAM_WORKSHOP_ITEM_ID or secret STEAM_WORKSHOP_ID."
             missing=1
           fi
 
           if [ -z "${STEAM_CONFIG_VDF_BASE64}" ]; then
-            echo "::error::Missing STEAM_CONFIG_VDF_BASE64 secret."
+            echo "::warning::Missing STEAM_CONFIG_VDF_BASE64 secret."
             missing=1
           fi
 
           if [ -z "${STEAM_LOGINUSERS_VDF_BASE64}" ]; then
-            echo "::error::Missing STEAM_LOGINUSERS_VDF_BASE64 secret."
+            echo "::warning::Missing STEAM_LOGINUSERS_VDF_BASE64 secret."
             missing=1
           fi
 
           if [ "${missing}" -ne 0 ]; then
-            exit 1
+            echo "deploy_enabled=false" >> "${GITHUB_OUTPUT}"
+            {
+              echo "### Steam Workshop deployment skipped"
+              echo
+              echo "One or more required deploy variables/secrets are missing."
+              echo
+              echo "Required configuration:"
+              echo "- STEAM_USERNAME repository variable or secret"
+              echo "- STEAM_WORKSHOP_ITEM_ID repository variable, or STEAM_WORKSHOP_ID secret"
+              echo "- STEAM_CONFIG_VDF_BASE64 secret"
+              echo "- STEAM_LOGINUSERS_VDF_BASE64 secret"
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
           fi
+
+          echo "deploy_enabled=true" >> "${GITHUB_OUTPUT}"
 
   deploy:
     name: Deploy addon
     runs-on: windows-latest
     needs: preflight
+    if: needs.preflight.outputs.deploy_enabled == 'true'
 
     env:
       ADDON_NAME: ttt-karma-market

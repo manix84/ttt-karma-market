@@ -120,10 +120,16 @@ The script:
 - uploads a new Workshop item with `gmpublish create`
 - uses `workshop/icon.jpg` as the Workshop icon
 
+On macOS, the script looks in the normal Steam install and the signed app bundle:
+
+```text
+~/Library/Application Support/Steam/steamapps/common/GarrysMod/GarrysMod_Signed.app/Contents/MacOS
+```
+
 If the script cannot find Garry's Mod tools automatically, set paths explicitly:
 
 ```sh
-GMOD_BIN="/path/to/GarrysMod/bin" bash scripts/create_workshop_item.sh
+GMOD_BIN="/path/to/GarrysMod" bash scripts/create_workshop_item.sh
 ```
 
 or:
@@ -131,6 +137,23 @@ or:
 ```sh
 GMAD_BIN="/path/to/gmad" GMPUBLISH_BIN="/path/to/gmpublish" bash scripts/create_workshop_item.sh
 ```
+
+If `gmpublish create` fails with:
+
+```text
+Creation failed! Not logged on
+```
+
+the script falls back to SteamCMD and creates the Workshop item with
+`publishedfileid "0"`. SteamCMD may prompt for your Steam password and Steam
+Guard code the first time. You can provide the username up front:
+
+```sh
+STEAM_USERNAME="your_steam_username" bash scripts/create_workshop_item.sh
+```
+
+After SteamCMD succeeds, it writes the new item ID back to
+`dist/workshop-create.vdf` and prints the Workshop URL.
 
 After the upload succeeds, open the new Workshop item and copy the number from
 the URL:
@@ -246,9 +269,10 @@ The deploy workflow validates those files, installs Garry's Mod tools through
 SteamCMD, builds the `.gma`, generates Steam change notes, and uploads with
 `workshop_build_item`.
 
-The deploy workflow has a preflight job that fails before checkout, SteamCMD
-installation, packaging, or upload if any required deploy variable or secret is
-missing.
+The deploy workflow has a preflight job that checks required deploy variables
+and secrets before checkout, SteamCMD installation, packaging, or upload. If
+anything is missing, the Steam deploy job is skipped instead of failing the
+workflow.
 
 ## ✅ Compatibility
 
