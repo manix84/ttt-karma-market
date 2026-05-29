@@ -152,7 +152,7 @@ hook.Add("TTTPrepareRound", "TTTKarmaMarket_PrepareRound", function()
   roundStartedAt = CurTime()
   lastSampleAt = 0
 
-  addon.Log("round started")
+  addon.Log("round started", addon.GetTTTVariantName())
 
   for _, ply in ipairs(player.GetHumans()) do
     ensureRecord(ply)
@@ -217,6 +217,7 @@ function addon.GetDebugSummary()
   return {
     enabled = addon.GetBool("enabled"),
     debug = addon.GetBool("debug"),
+    variant = addon.GetTTTVariantName(),
     roundActive = roundActive,
     playersTracked = playerCount,
     candleCounts = candleCounts,

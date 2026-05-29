@@ -8,6 +8,21 @@ function addon.Log(...)
   print("[TTT Karma Market]", ...)
 end
 
+function addon.IsTTT2()
+  -- TTT2 exposes its own globals in most builds. KARMA.DoKarmaChange is a
+  -- documented TTT2 karma helper, so it is a useful fallback signal.
+  if istable(TTT2) then return true end
+  if istable(KARMA) and isfunction(KARMA.DoKarmaChange) then return true end
+
+  return false
+end
+
+function addon.GetTTTVariantName()
+  if addon.IsTTT2() then return "TTT2" end
+
+  return "Classic TTT"
+end
+
 function addon.RoundNumber(value)
   local number = tonumber(value) or 0
 

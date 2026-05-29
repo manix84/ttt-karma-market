@@ -14,6 +14,7 @@ addon.ConVarDefaults = addon.ConVarDefaults or {
   debug = { name = "ttt_karma_market_debug", default = "0", kind = "bool", help = "Print TTT Karma Market debug messages." },
   sample_interval = { name = "ttt_karma_market_sample_interval", default = "10", kind = "number", min = 1, max = 120, help = "Seconds between karma samples." },
   popup_fallback = { name = "ttt_karma_market_popup_fallback", default = "1", kind = "bool", help = "Open a popup when the TTT end-round tab cannot be extended." },
+  ttt2_force_popup = { name = "ttt_karma_market_ttt2_force_popup", default = "1", kind = "bool", help = "Prefer the popup display in TTT2 to avoid depending on TTT2 round-end UI internals." },
   max_candles = { name = "ttt_karma_market_max_candles", default = "60", kind = "number", min = 1, max = 240, help = "Maximum candles stored for each player." },
   chart_height = { name = "ttt_karma_market_chart_height", default = "420", kind = "number", min = 220, max = 900, help = "Preferred chart height in the fallback window." },
   show_grid = { name = "ttt_karma_market_show_grid", default = "1", kind = "bool", help = "Show chart grid lines." },

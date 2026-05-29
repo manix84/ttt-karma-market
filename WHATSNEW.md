@@ -33,6 +33,7 @@ Initial production-ready addon structure for TTT Karma Market.
 - GLua lint installer/wrapper and lint workflow.
 - Community health files for contributing, support, and security reporting.
 - Admin panel sample chart button for quick local UI verification.
+- TTT2 compatibility mode with TTT2 detection and conservative popup display.
 
 🔄 Changed:
 

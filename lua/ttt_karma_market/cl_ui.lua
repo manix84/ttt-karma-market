@@ -187,6 +187,11 @@ local function findPropertySheet(panel)
 end
 
 function ui.TryInjectEndRoundTab(data)
+  if addon.IsTTT2() and addon.GetBool("ttt2_force_popup") then
+    addon.Log("using popup fallback for TTT2")
+    return false
+  end
+
   local world = vgui.GetWorldPanel()
   local sheet = findPropertySheet(world)
 

@@ -94,6 +94,7 @@ local function formatStatus()
 
   local status = admin.Status or {}
   local lines = {
+    "Mode: " .. tostring(status.variant or addon.GetTTTVariantName()),
     "Active players tracked: " .. tostring(status.playersTracked or 0),
     "Timer active: " .. tostring(status.timerExists == true),
     "Round active: " .. tostring(status.roundActive == true),
@@ -165,6 +166,7 @@ local function buildPanel(panel)
   addCheck(panel, "enabled", "Enable addon", "Track karma and show the end-round market panel.")
   addCheck(panel, "debug", "Enable debug logging", "Print lifecycle, sampling, networking, and admin messages.")
   addCheck(panel, "popup_fallback", "Enable popup fallback", "Open a standalone popup if TTT's end-round sheet cannot be found.")
+  addCheck(panel, "ttt2_force_popup", "Prefer popup in TTT2", "Avoid injecting into TTT2's redesigned round-end UI.")
   addCheck(panel, "show_grid", "Show chart grid", "Draw horizontal chart grid lines.")
   addCheck(panel, "show_labels", "Show labels", "Draw karma and time labels around the chart.")
   addCheck(panel, "auto_sort", "Auto-sort players", "Apply the default sorting mode when opening the panel.")
