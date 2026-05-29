@@ -1,0 +1,244 @@
+name: Deploy to Steam Workshop
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "addon.json"
+      - "lua/**"
+      - "materials/**"
+  workflow_dispatch:
+    inputs:
+      change_notes:
+        description: "Steam Workshop change notes"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Validate deploy configuration
+    runs-on: ubuntu-latest
+
+    env:
+      WORKSHOP_ITEM_ID: ${{ vars.STEAM_WORKSHOP_ITEM_ID || secrets.STEAM_WORKSHOP_ID }}
+      STEAM_USERNAME: ${{ vars.STEAM_USERNAME || secrets.STEAM_USERNAME }}
+      STEAM_CONFIG_VDF_BASE64: ${{ secrets.STEAM_CONFIG_VDF_BASE64 }}
+      STEAM_LOGINUSERS_VDF_BASE64: ${{ secrets.STEAM_LOGINUSERS_VDF_BASE64 }}
+
+    steps:
+      - name: Check required deploy variables
+        run: |
+          set -euo pipefail
+
+          missing=0
+
+          if [ -z "${STEAM_USERNAME}" ]; then
+            echo "::error::Missing STEAM_USERNAME. Set repository variable STEAM_USERNAME, or set secret STEAM_USERNAME."
+            missing=1
+          fi
+
+          if [ -z "${WORKSHOP_ITEM_ID}" ]; then
+            echo "::error::Missing Steam Workshop item ID. Set repository variable STEAM_WORKSHOP_ITEM_ID or secret STEAM_WORKSHOP_ID."
+            missing=1
+          fi
+
+          if [ -z "${STEAM_CONFIG_VDF_BASE64}" ]; then
+            echo "::error::Missing STEAM_CONFIG_VDF_BASE64 secret."
+            missing=1
+          fi
+
+          if [ -z "${STEAM_LOGINUSERS_VDF_BASE64}" ]; then
+            echo "::error::Missing STEAM_LOGINUSERS_VDF_BASE64 secret."
+            missing=1
+          fi
+
+          if [ "${missing}" -ne 0 ]; then
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy addon
+    runs-on: windows-latest
+    needs: preflight
+
+    env:
+      ADDON_NAME: ttt-karma-market
+      WORKSHOP_ITEM_ID: ${{ vars.STEAM_WORKSHOP_ITEM_ID || secrets.STEAM_WORKSHOP_ID }}
+      STEAM_USERNAME: ${{ vars.STEAM_USERNAME || secrets.STEAM_USERNAME }}
+      STEAM_CONFIG_VDF_BASE64: ${{ secrets.STEAM_CONFIG_VDF_BASE64 }}
+      STEAM_LOGINUSERS_VDF_BASE64: ${{ secrets.STEAM_LOGINUSERS_VDF_BASE64 }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Steam change notes
+        shell: pwsh
+        run: node scripts/generate-release-notes.mjs
+
+      - name: Install SteamCMD and Garry's Mod tools
+        shell: pwsh
+        run: |
+          $steamCmdDir = Join-Path $env:RUNNER_TEMP "steamcmd"
+          $garrysModDir = Join-Path $env:RUNNER_TEMP "garrysmod"
+          $steamCmdZip = Join-Path $env:RUNNER_TEMP "steamcmd.zip"
+
+          New-Item -ItemType Directory -Force -Path $steamCmdDir, $garrysModDir | Out-Null
+          Invoke-WebRequest "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip" -OutFile $steamCmdZip
+          Expand-Archive -Path $steamCmdZip -DestinationPath $steamCmdDir -Force
+
+          & "$steamCmdDir\steamcmd.exe" +quit
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "SteamCMD returned $LASTEXITCODE while bootstrapping. Retrying once after self-update."
+            & "$steamCmdDir\steamcmd.exe" +quit
+            if ($LASTEXITCODE -ne 0) {
+              throw "SteamCMD failed to bootstrap before login."
+            }
+          }
+
+          $configDir = Join-Path $steamCmdDir "config"
+          $configPath = Join-Path $configDir "config.vdf"
+          $loginUsersPath = Join-Path $configDir "loginusers.vdf"
+          New-Item -ItemType Directory -Force -Path $configDir | Out-Null
+          try {
+            [IO.File]::WriteAllBytes(
+              $configPath,
+              [Convert]::FromBase64String($env:STEAM_CONFIG_VDF_BASE64)
+            )
+          } catch {
+            throw "STEAM_CONFIG_VDF_BASE64 is not valid base64."
+          }
+
+          try {
+            [IO.File]::WriteAllBytes(
+              $loginUsersPath,
+              [Convert]::FromBase64String($env:STEAM_LOGINUSERS_VDF_BASE64)
+            )
+          } catch {
+            throw "STEAM_LOGINUSERS_VDF_BASE64 is not valid base64."
+          }
+
+          if (!(Test-Path $configPath) -or (Get-Item $configPath).Length -eq 0) {
+            throw "config.vdf was not written successfully."
+          }
+
+          if (!(Test-Path $loginUsersPath) -or (Get-Item $loginUsersPath).Length -eq 0) {
+            throw "loginusers.vdf was not written successfully."
+          }
+
+          $configContent = Get-Content $configPath -Raw
+          if ($configContent -notmatch '"ConnectCache"') {
+            throw "Decoded config.vdf is valid, but does not contain SteamCMD cached credentials. Recreate it from a successful local SteamCMD login for $env:STEAM_USERNAME."
+          }
+
+          if ($configContent -notmatch [regex]::Escape($env:STEAM_USERNAME)) {
+            Write-Warning "STEAM_USERNAME was not found in config.vdf. Cached credentials may belong to a different account."
+          }
+
+          $loginUsersContent = Get-Content $loginUsersPath -Raw
+          if ($loginUsersContent -notmatch [regex]::Escape($env:STEAM_USERNAME)) {
+            throw "loginusers.vdf does not reference $env:STEAM_USERNAME. Regenerate cached Steam login files for the correct account."
+          }
+
+          $loginArgs = @("+login", $env:STEAM_USERNAME)
+
+          & "$steamCmdDir\steamcmd.exe" `
+            @loginArgs `
+            +quit
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "SteamCMD failed to log in using cached credentials. Regenerate STEAM_CONFIG_VDF_BASE64 and STEAM_LOGINUSERS_VDF_BASE64 from a fresh local SteamCMD login for $env:STEAM_USERNAME."
+          }
+
+          & "$steamCmdDir\steamcmd.exe" `
+            +force_install_dir "$garrysModDir" `
+            @loginArgs `
+            +app_update 4000 validate `
+            +quit
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "SteamCMD logged in with cached credentials but failed to install Garry's Mod tools with app_update 4000. Confirm the Steam account owns Garry's Mod and can install app 4000 through SteamCMD."
+          }
+
+          "STEAMCMD_DIR=$steamCmdDir" >> $env:GITHUB_ENV
+          "GARRYSMOD_DIR=$garrysModDir" >> $env:GITHUB_ENV
+
+      - name: Stage addon
+        shell: pwsh
+        run: |
+          $stagingDir = Join-Path $env:RUNNER_TEMP $env:ADDON_NAME
+          Remove-Item -Recurse -Force $stagingDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
+
+          Copy-Item addon.json $stagingDir
+          Copy-Item lua $stagingDir -Recurse
+          Copy-Item materials $stagingDir -Recurse
+
+          "ADDON_STAGING_DIR=$stagingDir" >> $env:GITHUB_ENV
+
+      - name: Build GMA
+        shell: pwsh
+        run: |
+          $gmad = Join-Path $env:GARRYSMOD_DIR "bin\gmad.exe"
+          $gma = Join-Path $env:RUNNER_TEMP "$env:ADDON_NAME.gma"
+
+          if (!(Test-Path $gmad)) {
+            throw "gmad.exe was not found at $gmad"
+          }
+
+          & $gmad create -folder "$env:ADDON_STAGING_DIR" -out "$gma"
+          "ADDON_GMA=$gma" >> $env:GITHUB_ENV
+
+      - name: Upload to Steam Workshop
+        shell: pwsh
+        env:
+          CHANGE_NOTES: ${{ inputs.change_notes }}
+        run: |
+          $steamcmd = Join-Path $env:STEAMCMD_DIR "steamcmd.exe"
+
+          $changes = $env:CHANGE_NOTES
+          if ([string]::IsNullOrWhiteSpace($changes)) {
+            $changes = Get-Content "dist\steam-change-notes.txt" -Raw
+          }
+
+          $workshopContentDir = Join-Path $env:RUNNER_TEMP "workshop-content"
+          $workshopVdf = Join-Path $env:RUNNER_TEMP "workshop-upload.vdf"
+          New-Item -ItemType Directory -Force -Path $workshopContentDir | Out-Null
+          Copy-Item "$env:ADDON_GMA" (Join-Path $workshopContentDir "$env:ADDON_NAME.gma") -Force
+
+          function ConvertTo-VdfValue([string] $value) {
+            return $value.Replace("\", "\\").Replace('"', '\"')
+          }
+
+          $contentFolder = ConvertTo-VdfValue $workshopContentDir
+          $changeNote = ConvertTo-VdfValue (($changes -replace "`r`n", "`n").TrimEnd("`n"))
+
+          @(
+            '"workshopitem"',
+            '{',
+            '  "appid" "4000"',
+            "  `"publishedfileid`" `"$env:WORKSHOP_ITEM_ID`"",
+            "  `"contentfolder`" `"$contentFolder`"",
+            "  `"changenote`" `"$changeNote`"",
+            '}'
+          ) | Set-Content -Path $workshopVdf -Encoding ASCII
+
+          $loginArgs = @("+login", $env:STEAM_USERNAME)
+          $uploadOutput = & $steamcmd `
+            @loginArgs `
+            +workshop_build_item "$workshopVdf" `
+            +quit 2>&1
+          $uploadExitCode = $LASTEXITCODE
+
+          $uploadOutput | ForEach-Object { Write-Host $_ }
+          $uploadText = $uploadOutput -join "`n"
+
+          if ($uploadExitCode -ne 0 -or $uploadText -match "(?m)(ERROR|Error|FAILED|Failed)") {
+            throw "SteamCMD workshop_build_item failed."
+          }

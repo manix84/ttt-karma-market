@@ -27,6 +27,11 @@ Initial production-ready addon structure for TTT Karma Market.
 - 512x512 Workshop icon at `workshop/icon.jpg`.
 - Local install helper for symlink or copy-based Garry's Mod testing.
 - First-publish helper and documentation for creating the initial Steam Workshop item ID.
+- `VERSION` file and version bump helpers.
+- Automated GitHub Release packaging with generated release notes.
+- Steam Workshop deployment with generated change notes and cached SteamCMD credential validation.
+- GLua lint installer/wrapper and lint workflow.
+- Community health files for contributing, support, and security reporting.
 
 🔄 Changed:
 

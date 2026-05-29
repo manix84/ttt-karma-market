@@ -139,8 +139,9 @@ the URL:
 https://steamcommunity.com/sharedfiles/filedetails/?id=1234567890
 ```
 
-Use that number as the `STEAM_WORKSHOP_ID` GitHub Actions secret. Future pushes
-to `main` can then update the existing item instead of creating a new one.
+Use that number as the `STEAM_WORKSHOP_ITEM_ID` GitHub Actions repository
+variable, or as the `STEAM_WORKSHOP_ID` secret. Future pushes to `main` can then
+update the existing item instead of creating a new one.
 
 ## 🧪 Checks
 
@@ -158,6 +159,52 @@ This checks:
 - Lua syntax with `luac`
 - simple GLua policy checks for forbidden web/DHTML patterns
 - dry-run build behavior, using `gmad` when available
+- release-note generation
+
+Run the GLua linter separately:
+
+```sh
+./scripts/glualint.sh
+```
+
+The linter helper installs GLuaFixer locally into `.tools/` if it is not already
+available.
+
+## 🔖 Versioning
+
+The current package version lives in `VERSION`.
+
+Manual bumps:
+
+```sh
+./scripts/bump-version.sh patch
+./scripts/bump-version.sh minor
+./scripts/bump-version.sh major
+```
+
+Automatic bumps use conventional commit messages:
+
+```sh
+./scripts/bump-version.sh auto
+```
+
+You can enable the bundled pre-commit hook if you want local version bumps
+before commits:
+
+```sh
+./scripts/setup-hooks.sh
+```
+
+Release notes are generated from commit subjects:
+
+```sh
+node scripts/generate-release-notes.mjs
+```
+
+This writes:
+
+- `dist/release-notes.md`
+- `dist/steam-change-notes.txt`
 
 ## 🚀 GitHub Actions
 
@@ -167,16 +214,41 @@ package the repository root and deploy the resulting `.gma` to Steam Workshop.
 Workflows:
 
 - `CI`: runs on pull requests and pushes to `main`.
-- `Build and Deploy to Steam Workshop`: runs on pushes to `main` and manual dispatch.
+- `Lint`: runs GLua lint on pull requests and pushes to `main`.
+- `Release`: builds a ZIP package, generates release notes, uploads artifacts on pull requests, and publishes/updates a GitHub Release on pushes to `main` when addon files change.
+- `Deploy to Steam Workshop`: builds a GMA and deploys to Steam Workshop on pushes to `main` when addon files change, or manual dispatch.
+
+Version-only commits do not trigger release or Steam Workshop deployment by
+themselves. The workflows still read `VERSION` when packaging a real addon
+change.
+
+Required deploy repository variable or secret:
+
+- `STEAM_USERNAME`: repository variable or secret for the Steam account username.
+- `STEAM_WORKSHOP_ITEM_ID`: repository variable for the existing Workshop item ID.
+- `STEAM_WORKSHOP_ID`: optional secret fallback for the existing Workshop item ID.
 
 Required deploy secrets:
 
-- `STEAM_USERNAME`: Steam account username for publishing.
-- `STEAM_VDF`: base64-encoded Steam `config.vdf`, recommended for Steam Guard auth.
-- `STEAM_WORKSHOP_ID`: existing Workshop item ID to update, created by the first publish.
+- `STEAM_CONFIG_VDF_BASE64`: base64-encoded SteamCMD `config.vdf`.
+- `STEAM_LOGINUSERS_VDF_BASE64`: base64-encoded SteamCMD `loginusers.vdf`.
 
-The deploy workflow uses `gmod-workshop/workshop-upload@v1`, which packages the
-addon directory and uploads it to the Garry's Mod Workshop with `workshop/icon.jpg`.
+Generate both files from a successful local SteamCMD login, then base64 encode
+them as one-line values:
+
+```sh
+steamcmd +login YOUR_STEAM_USERNAME +quit
+openssl base64 -A -in "/path/to/steamcmd/config/config.vdf"
+openssl base64 -A -in "/path/to/steamcmd/config/loginusers.vdf"
+```
+
+The deploy workflow validates those files, installs Garry's Mod tools through
+SteamCMD, builds the `.gma`, generates Steam change notes, and uploads with
+`workshop_build_item`.
+
+The deploy workflow has a preflight job that fails before checkout, SteamCMD
+installation, packaging, or upload if any required deploy variable or secret is
+missing.
 
 ## ✅ Compatibility
 

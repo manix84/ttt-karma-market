@@ -14,6 +14,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = {
     "addon.json",
+    "CONTRIBUTING.md",
+    "PRIVACY.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    "VERSION",
+    "WHATSNEW.md",
     "lua/autorun/ttt_karma_market.lua",
     "lua/ttt_karma_market/sh_config.lua",
     "lua/ttt_karma_market/sh_types.lua",
@@ -34,9 +40,15 @@ REQUIRED_IGNORES = {
     "workshop/*",
     "dist/*",
     "README.md",
+    "CONTRIBUTING.md",
     "LICENSE.md",
     "PRIVACY.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    "VERSION",
     "WHATSNEW.md",
+    ".githooks/*",
+    ".tools/*",
     "*.gma",
     "*.DS_Store",
 }

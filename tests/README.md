@@ -17,6 +17,13 @@ Coverage today:
 - simple GLua policy checks
 - icon dimension checks
 - dry-run packaging behavior
+- release-note generation
+
+Run GLua lint separately with:
+
+```sh
+./scripts/glualint.sh
+```
 
 Future in-game tests should live here when a repeatable Garry's Mod test harness
 is available.

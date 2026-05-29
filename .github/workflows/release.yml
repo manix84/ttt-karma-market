@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths:
+      - "addon.json"
+      - "lua/**"
+      - "materials/**"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version name"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package addon
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build local install package
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${INPUT_VERSION}" ]]; then
+            version="${INPUT_VERSION#v}"
+          else
+            version="$(tr -d '[:space:]' < VERSION)"
+            version="${version#v}"
+          fi
+
+          tag="v${version}"
+          archive="ttt-karma-market-${tag}.zip"
+          staging="dist/ttt-karma-market"
+
+          echo "RELEASE_VERSION=${version}" >> "${GITHUB_ENV}"
+          echo "RELEASE_TAG=${tag}" >> "${GITHUB_ENV}"
+
+          rm -rf dist
+          mkdir -p "${staging}"
+
+          cp addon.json "${staging}/"
+          cp -R lua "${staging}/"
+          cp -R materials "${staging}/"
+
+          (
+            cd dist
+            zip -qr "${archive}" ttt-karma-market
+          )
+
+          echo "Built dist/${archive}"
+
+      - name: Generate release notes
+        run: node scripts/generate-release-notes.mjs
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ttt-karma-market-package
+          path: |
+            dist/*.zip
+            dist/release-notes.md
+            dist/steam-change-notes.txt
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" dist/*.zip --clobber
+            gh release edit "${RELEASE_TAG}" \
+              --title "TTT Karma Market ${RELEASE_TAG}" \
+              --notes-file dist/release-notes.md \
+              --latest
+          else
+            gh release create "${RELEASE_TAG}" dist/*.zip \
+              --target "${GITHUB_SHA}" \
+              --title "TTT Karma Market ${RELEASE_TAG}" \
+              --notes-file dist/release-notes.md \
+              --latest
+          fi
