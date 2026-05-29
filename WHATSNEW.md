@@ -32,6 +32,7 @@ Initial production-ready addon structure for TTT Karma Market.
 - Steam Workshop deployment with generated change notes and cached SteamCMD credential validation.
 - GLua lint installer/wrapper and lint workflow.
 - Community health files for contributing, support, and security reporting.
+- Admin panel sample chart button for quick local UI verification.
 
 🔄 Changed:
 

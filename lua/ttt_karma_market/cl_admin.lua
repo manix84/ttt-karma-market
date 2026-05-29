@@ -118,6 +118,45 @@ local function refreshStatus()
   sendAction("status")
 end
 
+local function openSampleChart()
+  if not addon.UI or not addon.UI.OpenFallbackPopup then return end
+
+  local data = {
+    {
+      name = "Sample Trader",
+      steamID = "SAMPLE:1",
+      starting = 1000,
+      ending = 1037,
+      high = 1052,
+      low = 982,
+      biggestGain = 31,
+      biggestLoss = -18,
+      candles = {
+        { t = 0, open = 1000, high = 1012, low = 996, close = 1008 },
+        { t = 10, open = 1008, high = 1028, low = 1002, close = 1024 },
+        { t = 20, open = 1024, high = 1031, low = 1006, close = 1010 },
+        { t = 30, open = 1010, high = 1041, low = 1008, close = 1038 },
+        { t = 40, open = 1038, high = 1052, low = 1029, close = 1037 }
+      }
+    },
+    {
+      name = "Flat Karma",
+      steamID = "SAMPLE:2",
+      starting = 1000,
+      ending = 1000,
+      high = 1000,
+      low = 1000,
+      biggestGain = 0,
+      biggestLoss = 0,
+      candles = {
+        { t = 0, open = 1000, high = 1000, low = 1000, close = 1000 }
+      }
+    }
+  }
+
+  addon.UI.OpenFallbackPopup(data)
+end
+
 local function buildPanel(panel)
   panel:ClearControls()
   panel:Help("TTT Karma Market")
@@ -153,6 +192,12 @@ local function buildPanel(panel)
   summary:SetTooltip("Print server-side debug state to the server console.")
   summary.DoClick = function() sendAction("summary") end
   panel:AddItem(summary)
+
+  local preview = vgui.Create("DButton")
+  preview:SetText("Open sample chart")
+  preview:SetTooltip("Open a local sample Karma Market popup without waiting for a TTT round.")
+  preview.DoClick = openSampleChart
+  panel:AddItem(preview)
 
   local status = vgui.Create("DLabel")
   status:SetText(formatStatus())

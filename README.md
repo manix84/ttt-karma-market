@@ -58,6 +58,7 @@ Recommended manual smoke test:
 
 - Start a local TTT game or server with this addon installed.
 - Confirm the addon appears in `Utilities > TTT > Karma Market`.
+- Click `Open sample chart` to verify the client UI and candlestick renderer without waiting for a round.
 - Start and finish a TTT round.
 - Confirm the `Karma Market` end-round tab appears, or that the fallback popup opens.
 - Toggle `ttt_karma_market_debug` in the admin panel and check the console for lifecycle messages.

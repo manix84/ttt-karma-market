@@ -119,17 +119,19 @@ local function sendRoundData()
     return string.lower(a.name or "") < string.lower(b.name or "")
   end)
 
-  net.Start(config.NetMessage)
-  net.WriteUInt(clampCount(#payload, 8), 8)
+  local sentCount = math.min(#payload, 255)
 
-  for i = 1, math.min(#payload, 255) do
+  net.Start(config.NetMessage)
+  net.WriteUInt(sentCount, 8)
+
+  for i = 1, sentCount do
     writePlayerRecord(payload[i])
   end
 
   net.Broadcast()
   lastNetworkAt = CurTime()
-  lastNetworkCount = #payload
-  addon.Log("sent end-round karma market data for", #payload, "players")
+  lastNetworkCount = sentCount
+  addon.Log("sent end-round karma market data for", sentCount, "players")
 end
 
 local function stopSampling()
